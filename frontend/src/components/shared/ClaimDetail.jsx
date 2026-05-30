@@ -85,6 +85,7 @@ function LineItemRow({ li, claimId, isInsurer, onRefresh, memberId }) {
   const [loading, setLoading] = useState(false)
 
   const hasOpenDispute = li.disputes?.some(d => d.status === 'OPEN')
+  const hasResolvedDispute = li.disputes?.some(d => d.status === 'UPHELD' || d.status === 'OVERTURNED')
 
   const handleDispute = async () => {
     if (!disputeReason.trim()) return
@@ -156,7 +157,7 @@ function LineItemRow({ li, claimId, isInsurer, onRefresh, memberId }) {
           ))}
 
           {/* File dispute — member side */}
-          {!isInsurer && (li.status === 'DENIED' || li.status === 'APPROVED') && !hasOpenDispute && (
+          {!isInsurer && (li.status === 'DENIED' || li.status === 'APPROVED') && !hasOpenDispute && !hasResolvedDispute && (
             showDispute ? (
               <div style={{ marginTop: 10 }}>
                 <label>Reason for Dispute</label>
@@ -204,7 +205,11 @@ export default function ClaimDetail({ claim, isInsurer, onRefresh, onBack }) {
   const [loading, setLoading] = useState(false)
 
   const canPay = ['APPROVED', 'PARTIALLY_APPROVED'].includes(claim.status)
+  const hasResolvedDispute = claim.line_items?.some(li =>
+    li.disputes?.some(d => d.status === 'UPHELD' || d.status === 'OVERTURNED')
+  )
   const canDispute = ['APPROVED', 'PARTIALLY_APPROVED', 'DENIED', 'PAID'].includes(claim.status)
+    && !hasResolvedDispute
 
   const markPaid = async () => {
     setLoading(true)
