@@ -214,6 +214,24 @@ class TestOopMax:
             f"OOP adjustment leaked into service accumulator"
         )
 
+    def test_above_limit_amount_does_not_inflate_insurance_payment(self, client):
+        # Bronze PRESCRIPTION: limit=$1200, copay=$40, deductible=$2500, 55% covered.
+        # Submit $20,000 claim on a fresh member.
+        # adjudicable=$19,960, deductible=$2,500 applied, remaining=$17,460
+        # insurance share = 55%*$17,460 = $9,603 — but capped at limit $1,200
+        # The $8,403 above-limit is NOT added to member_owes (not member's insurance responsibility)
+        # member_owes = $40 + $2,500 + 45%*$17,460 = $10,397 → OOP max hit → capped at $8,000
+        # insurance pays = $1,200 + $2,397 OOP absorption = $3,597
+        claim = submit(client, "member-003", [li("PRESCRIPTION", 20000)])
+        item = claim["line_items"][0]
+        assert item["status"] == "APPROVED"
+        assert Decimal(item["approved_amount"]) <= Decimal("3597.00"), (
+            f"Insurance paid ${item['approved_amount']} — inflated by above-limit amount"
+        )
+        assert Decimal(item["approved_amount"]) == Decimal("3597.00"), (
+            f"Expected $3597.00, got ${item['approved_amount']}"
+        )
+
     def test_oop_max_caps_member_responsibility(self, client):
         # Diamond OOP max=$3000. Use MENTAL_HEALTH (limit=$6000, 90% covered, copay=$20, deductible applies).
         # Deductible=$500 first. Claim $300: adjudicable=$280, deductible absorbs $280 → member=$300, insurance=$0.
