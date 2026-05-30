@@ -140,8 +140,7 @@ export default function InsurerTab() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
-                      <StatusBadge status={c.status} small />
-                      {hasNeedsReview && <StatusBadge status="NEEDS_REVIEW" small />}
+                      <StatusBadge status={hasNeedsReview ? 'NEEDS_REVIEW' : c.status} small />
                       <div style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>{fmt(totalApproved)}</div>
                     </div>
                   </div>
