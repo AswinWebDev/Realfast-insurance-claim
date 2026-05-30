@@ -211,7 +211,13 @@ def resolve_dispute(
         li.denial_reason = None
 
     claim = db.query(Claim).filter_by(id=claim_id).first()
-    claim.status = compute_claim_status(claim.line_items)
+    computed = compute_claim_status(claim.line_items)
+    if payload.outcome == DisputeStatus.OVERTURNED and computed in (
+        ClaimStatus.APPROVED, ClaimStatus.PARTIALLY_APPROVED
+    ):
+        claim.status = ClaimStatus.PAID
+    else:
+        claim.status = computed
     db.commit()
     db.refresh(dispute)
     return dispute
