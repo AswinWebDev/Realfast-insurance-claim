@@ -3,7 +3,7 @@ import { getClaims, getClaim, getMembers } from '../../api/client'
 import ClaimDetail from '../shared/ClaimDetail'
 import StatusBadge from '../shared/StatusBadge'
 
-const FILTERS = ['ALL', 'UNDER_REVIEW', 'NEEDS_REVIEW', 'DISPUTED', 'APPROVED', 'PARTIALLY_APPROVED', 'DENIED', 'PAID']
+const FILTERS = ['ALL', 'UNDER_REVIEW', 'DISPUTED', 'APPROVED', 'PARTIALLY_APPROVED', 'DENIED', 'PAID']
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 const fmt = v => v != null ? `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—'
 
@@ -44,13 +44,16 @@ export default function InsurerTab() {
   const getMemberTier = id => members.find(m => m.id === id)?.policy_tier || ''
 
   const filtered = filter === 'ALL' ? allClaims : allClaims.filter(c => {
-    if (filter === 'NEEDS_REVIEW') return c.line_items?.some(l => l.status === 'NEEDS_REVIEW')
+    if (filter === 'UNDER_REVIEW')
+      return c.status === 'UNDER_REVIEW' || c.line_items?.some(l => l.status === 'NEEDS_REVIEW')
     return c.status === filter
   })
 
   const counts = {
+    // Claims needing manual action — either awaiting review or has a line item requiring prior auth decision
+    NEEDS_MANUAL: allClaims.filter(c => c.line_items?.some(l => l.status === 'NEEDS_REVIEW')).length,
+    // Claims under review that don't need manual action yet (e.g. awaiting info)
     UNDER_REVIEW: allClaims.filter(c => c.status === 'UNDER_REVIEW').length,
-    NEEDS_REVIEW: allClaims.filter(c => c.line_items?.some(l => l.status === 'NEEDS_REVIEW')).length,
     DISPUTED: allClaims.filter(c => c.status === 'DISPUTED').length,
   }
 
@@ -65,7 +68,7 @@ export default function InsurerTab() {
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
           {[
-            { label: 'Needs Review', count: counts.NEEDS_REVIEW, color: 'var(--amber)', bg: 'rgba(180,83,9,0.07)' },
+            { label: 'Needs Manual Action', count: counts.NEEDS_MANUAL, color: 'var(--amber)', bg: 'rgba(180,83,9,0.07)' },
             { label: 'Disputed', count: counts.DISPUTED, color: '#7c3aed', bg: 'rgba(124,58,237,0.07)' },
             { label: 'Under Review', count: counts.UNDER_REVIEW, color: 'var(--blue)', bg: 'var(--blue-light)' },
           ].map(({ label, count, color, bg }) => (
@@ -88,10 +91,15 @@ export default function InsurerTab() {
                 boxShadow: 'var(--shadow)',
                 cursor: 'pointer',
               }}>
-              {f.replace('_', ' ')}
-              {(f === 'UNDER_REVIEW' || f === 'NEEDS_REVIEW' || f === 'DISPUTED') && counts[f] > 0 && (
+              {f.replace(/_/g, ' ')}
+              {f === 'UNDER_REVIEW' && counts.UNDER_REVIEW > 0 && (
                 <span style={{ marginLeft: 5, background: filter === f ? 'rgba(255,255,255,0.3)' : 'var(--red)', color: '#fff', borderRadius: 20, padding: '0 5px', fontSize: 10 }}>
-                  {counts[f]}
+                  {counts.UNDER_REVIEW}
+                </span>
+              )}
+              {f === 'DISPUTED' && counts.DISPUTED > 0 && (
+                <span style={{ marginLeft: 5, background: filter === f ? 'rgba(255,255,255,0.3)' : 'var(--red)', color: '#fff', borderRadius: 20, padding: '0 5px', fontSize: 10 }}>
+                  {counts.DISPUTED}
                 </span>
               )}
             </button>
