@@ -359,6 +359,32 @@ class TestDisputes:
         assert updated_item["status"] == "APPROVED"
         assert claim_resp.json()["status"] == "APPROVED"
 
+    def test_claim_stays_disputed_while_second_open_dispute_exists(self, client):
+        # Claim with two denied line items, member files dispute on both.
+        # Insurer resolves one — claim must stay DISPUTED (not fall off the queue).
+        claim = submit(client, "member-003", [
+            li("PHYSICAL_THERAPY", 300),
+            li("PHYSICAL_THERAPY", 200),
+        ])
+        assert claim["status"] == "DENIED"
+        li1_id = claim["line_items"][0]["id"]
+        li2_id = claim["line_items"][1]["id"]
+
+        d1 = client.post(f"/api/claims/{claim['id']}/line-items/{li1_id}/disputes",
+            json={"reason": "Medically necessary per my doctor"}).json()
+        d2 = client.post(f"/api/claims/{claim['id']}/line-items/{li2_id}/disputes",
+            json={"reason": "Medically necessary per my doctor"}).json()
+
+        # Resolve first dispute — second still open
+        client.patch(f"/api/claims/{claim['id']}/line-items/{li1_id}/disputes/{d1['id']}",
+            json={"outcome": "UPHELD", "resolution_notes": "PT excluded on Bronze"})
+
+        # Claim must still be DISPUTED
+        updated = client.get(f"/api/claims/{claim['id']}").json()
+        assert updated["status"] == "DISPUTED", (
+            f"Claim should stay DISPUTED while second dispute is open, got {updated['status']}"
+        )
+
     def test_upheld_dispute_leaves_line_item_denied(self, client):
         claim = submit(client, "member-003", [li("PHYSICAL_THERAPY", 300)])
         item_id = claim["line_items"][0]["id"]
