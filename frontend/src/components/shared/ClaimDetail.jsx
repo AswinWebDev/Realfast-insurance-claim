@@ -162,9 +162,14 @@ function LineItemRow({ li, claimId, isInsurer, onRefresh, memberId }) {
               <div style={{ marginTop: 10 }}>
                 <label>Reason for Dispute</label>
                 <textarea rows={2} value={disputeReason} onChange={e => setDisputeReason(e.target.value)}
-                  placeholder="Explain why you are disputing this decision…" style={{ marginBottom: 8, resize: 'vertical', fontSize: 12 }} />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn-danger btn-sm" disabled={loading || disputeReason.length < 10} onClick={handleDispute}>
+                  placeholder="Explain why you are disputing this decision…" style={{ marginBottom: 4, resize: 'vertical', fontSize: 12 }} />
+                {disputeReason.length > 0 && disputeReason.length < 5 && (
+                  <div style={{ fontSize: 11, color: 'var(--red)', marginBottom: 6 }}>
+                    Please enter at least 5 characters ({disputeReason.length}/5)
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button className="btn-danger btn-sm" disabled={loading || disputeReason.length < 5} onClick={handleDispute}>
                     {loading ? 'Filing…' : 'File Dispute'}
                   </button>
                   <button className="btn-ghost btn-sm" onClick={() => setShowDispute(false)}>Cancel</button>
