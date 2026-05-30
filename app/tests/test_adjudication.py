@@ -198,6 +198,22 @@ class TestClaimStatus:
 # ---------------------------------------------------------------------------
 
 class TestOopMax:
+    def test_service_benefit_accumulator_not_inflated_by_oop_adjustment(self, client):
+        # Diamond SPECIALIST: limit=$8000, copay=$30, deductible applies ($500), 85% covered.
+        # Submit $20,000 claim. Insurance share capped at $8000 limit.
+        # OOP adjustment may increase approved_amount but must NOT leak into service accumulator.
+        # After claim, SERVICE_BENEFIT[SPECIALIST] must be <= $8000.
+        submit(client, "member-001", [li("SPECIALIST", 20000)])
+        resp = client.get("/api/members/member-001")
+        accums = resp.json()["accumulators"]
+        svc = next((a for a in accums if a["accumulator_type"] == "SERVICE_BENEFIT"
+                    and a["service_type"] == "SPECIALIST"), None)
+        assert svc is not None
+        assert Decimal(svc["amount_used"]) <= Decimal("8000.00"), (
+            f"SERVICE_BENEFIT accumulator ${svc['amount_used']} exceeds annual limit $8000 — "
+            f"OOP adjustment leaked into service accumulator"
+        )
+
     def test_oop_max_caps_member_responsibility(self, client):
         # Diamond OOP max=$3000. Use MENTAL_HEALTH (limit=$6000, 90% covered, copay=$20, deductible applies).
         # Deductible=$500 first. Claim $300: adjudicable=$280, deductible absorbs $280 → member=$300, insurance=$0.
