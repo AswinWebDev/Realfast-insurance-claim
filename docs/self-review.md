@@ -122,6 +122,7 @@ These are deliberately excluded. They are not gaps — they are the next version
 - **Dispute amount revision** — disputing an approved item's calculated amount is possible in the system but the insurer cannot set a revised amount on OVERTURN. The overturn just re-approves at the original calculated amount.
 - **Retroactive policy versioning** — a policy edit today affects all past adjudication
 - **CPT → service_type auto-mapping** — members select service type directly; real systems derive it from the CPT code
+- **HDHP (High Deductible Health Plan) behavior** — the system models standard PPO/HMO adjudication: copay is deducted first, then the deductible applies to the remainder. HDHPs work differently by IRS rule — no copays until after the deductible is fully met, then copays kick in. Members pay 100% of costs until the deductible is hit. This is a known simplification. All three plans (Diamond, Gold, Bronze) are modeled as PPO-style, not HDHP.
 
 ---
 
