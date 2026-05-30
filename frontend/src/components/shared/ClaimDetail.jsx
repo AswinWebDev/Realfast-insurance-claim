@@ -282,9 +282,9 @@ export default function ClaimDetail({ claim, isInsurer, onRefresh, onBack }) {
           {isInsurer && canPay && (
             <button className="btn-success" disabled={loading} onClick={markPaid}>Mark as Paid</button>
           )}
-          {canDispute && claim.status !== 'DISPUTED' && (
+          {!isInsurer && canDispute && claim.status !== 'DISPUTED' && (
             <button className="btn-danger" disabled={loading} onClick={markDisputed}>
-              {isInsurer ? 'Flag as Disputed' : 'Dispute Claim'}
+              Dispute Claim
             </button>
           )}
         </div>
