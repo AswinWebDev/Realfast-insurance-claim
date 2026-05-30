@@ -46,7 +46,14 @@ The manual review endpoint re-ran adjudication on the line item, but adjudicatio
 
 **Fixed:** added `skip_prior_auth=True` flag to `adjudicate_line_item`. The manual review endpoint passes this flag so Step 2 is bypassed and the engine runs the full calculation.
 
-### Bug 4 — Claim Number Race Condition (found in engineering review)
+### Bug 4 — Above-Limit Amount Inflating Insurance Payment (found by me during testing)
+When a claim exceeds the annual benefit limit, the engine incorrectly added `(insurance_share - approved_amount)` to `member_owes` in Step 7. This cascaded into two errors: (1) `member_owes` was inflated by the above-limit amount, which then fed into the OOP max calculation — making insurance absorb costs it should never pay; (2) `approved_amount` was then inflated by OOP absorption of that phantom member liability.
+
+Example: Bronze Prescription, $20,000 claim, $1,200 limit, OOP $4,500/$8,000 used. Engine was reporting insurance pays $16,500. Correct answer: $6,722 (with OOP used in the original scenario), or $3,597 (fresh member). Amounts above the annual benefit limit are simply not covered — they do not count toward the member's OOP max and the insurer does not pay them.
+
+**Fixed:** removed the line adding above-limit amount to `member_owes`. A regression test was added covering the exact scenario.
+
+### Bug 5 — Claim Number Race Condition (found in engineering review)
 `_claim_number()` used `SELECT COUNT(*) + 1` to generate sequential numbers. Two simultaneous submissions would produce the same claim number and the second would crash with a UNIQUE constraint violation.
 
 **Fixed:** replaced with `CLM-{year}-{uuid[:8].upper()}` — collision-free without needing a sequence table.
