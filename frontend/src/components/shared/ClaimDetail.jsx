@@ -204,23 +204,11 @@ function LineItemRow({ li, claimId, isInsurer, onRefresh, memberId }) {
 export default function ClaimDetail({ claim, isInsurer, onRefresh, onBack }) {
   const [loading, setLoading] = useState(false)
 
-  const canPay = ['APPROVED', 'PARTIALLY_APPROVED'].includes(claim.status)
-  const hasResolvedDispute = claim.line_items?.some(li =>
-    li.disputes?.some(d => d.status === 'UPHELD' || d.status === 'OVERTURNED')
-  )
-  const canDispute = ['APPROVED', 'PARTIALLY_APPROVED', 'DENIED', 'PAID'].includes(claim.status)
-    && !hasResolvedDispute
+  const canPay = isInsurer && ['APPROVED', 'PARTIALLY_APPROVED'].includes(claim.status)
 
   const markPaid = async () => {
     setLoading(true)
     try { await updateClaimStatus(claim.id, 'PAID'); onRefresh() }
-    catch (e) { alert(e.response?.data?.detail || 'Failed') }
-    finally { setLoading(false) }
-  }
-
-  const markDisputed = async () => {
-    setLoading(true)
-    try { await updateClaimStatus(claim.id, 'DISPUTED'); onRefresh() }
     catch (e) { alert(e.response?.data?.detail || 'Failed') }
     finally { setLoading(false) }
   }
@@ -276,17 +264,10 @@ export default function ClaimDetail({ claim, isInsurer, onRefresh, onBack }) {
         ))}
       </div>
 
-      {/* Actions */}
-      {(canPay || canDispute) && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {isInsurer && canPay && (
-            <button className="btn-success" disabled={loading} onClick={markPaid}>Mark as Paid</button>
-          )}
-          {!isInsurer && canDispute && claim.status !== 'DISPUTED' && (
-            <button className="btn-danger" disabled={loading} onClick={markDisputed}>
-              Dispute Claim
-            </button>
-          )}
+      {/* Actions — insurer only: Mark as Paid */}
+      {isInsurer && canPay && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-success" disabled={loading} onClick={markPaid}>Mark as Paid</button>
         </div>
       )}
     </div>
