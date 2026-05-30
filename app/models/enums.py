@@ -1,0 +1,52 @@
+import enum
+
+
+class PolicyTier(str, enum.Enum):
+    DIAMOND = "DIAMOND"
+    GOLD = "GOLD"
+    BRONZE = "BRONZE"
+
+
+class ServiceType(str, enum.Enum):
+    PRIMARY_CARE = "PRIMARY_CARE"
+    SPECIALIST = "SPECIALIST"
+    EMERGENCY_ROOM = "EMERGENCY_ROOM"
+    URGENT_CARE = "URGENT_CARE"
+    INPATIENT = "INPATIENT"
+    OUTPATIENT_SURGERY = "OUTPATIENT_SURGERY"
+    LAB = "LAB"
+    IMAGING = "IMAGING"
+    PRESCRIPTION = "PRESCRIPTION"
+    PHYSICAL_THERAPY = "PHYSICAL_THERAPY"
+    MENTAL_HEALTH = "MENTAL_HEALTH"
+
+
+class ClaimStatus(str, enum.Enum):
+    SUBMITTED = "SUBMITTED"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    APPROVED = "APPROVED"
+    PARTIALLY_APPROVED = "PARTIALLY_APPROVED"
+    DENIED = "DENIED"
+    PAID = "PAID"
+    DISPUTED = "DISPUTED"
+    UPHELD = "UPHELD"
+    OVERTURNED = "OVERTURNED"
+
+
+class LineItemStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    DENIED = "DENIED"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
+
+
+class AccumulatorType(str, enum.Enum):
+    DEDUCTIBLE = "DEDUCTIBLE"
+    OOP_MAX = "OOP_MAX"
+    SERVICE_BENEFIT = "SERVICE_BENEFIT"
+
+
+class DisputeStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    UPHELD = "UPHELD"
+    OVERTURNED = "OVERTURNED"

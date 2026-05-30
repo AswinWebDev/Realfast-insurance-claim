@@ -1,0 +1,15 @@
+# Python
+app/.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Database files
+*.db
+
+# OS
+.DS_Store
+
+# Claude Code local settings
+.claude/settings.local.json
