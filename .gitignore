@@ -14,3 +14,6 @@ __pycache__/
 # Claude Code local settings
 .claude/settings.local.json
 .gstack/
+
+# JSONL session logs contain conversation content — include in zip submission only, not git
+ai-artifacts/*.jsonl
