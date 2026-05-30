@@ -319,11 +319,11 @@ class TestDisputes:
         )
         assert resolve_resp.status_code == 200
         assert resolve_resp.json()["status"] == "OVERTURNED"
-        # Line item should now be APPROVED, claim auto-transitions to PAID
+        # Line item should now be APPROVED, claim back to APPROVED (insurer marks paid separately)
         claim_resp = client.get(f"/api/claims/{claim['id']}")
         updated_item = next(i for i in claim_resp.json()["line_items"] if i["id"] == item_id)
         assert updated_item["status"] == "APPROVED"
-        assert claim_resp.json()["status"] == "PAID"
+        assert claim_resp.json()["status"] == "APPROVED"
 
     def test_upheld_dispute_leaves_line_item_denied(self, client):
         claim = submit(client, "member-003", [li("PHYSICAL_THERAPY", 300)])
