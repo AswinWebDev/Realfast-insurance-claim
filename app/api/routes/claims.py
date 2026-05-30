@@ -211,7 +211,16 @@ def resolve_dispute(
         li.denial_reason = None
 
     claim = db.query(Claim).filter_by(id=claim_id).first()
-    claim.status = compute_claim_status(claim.line_items)
+    # Stay DISPUTED while any open dispute remains across all line items
+    has_open_dispute = any(
+        d.status == DisputeStatus.OPEN
+        for li in claim.line_items
+        for d in li.disputes
+    )
+    if has_open_dispute:
+        claim.status = ClaimStatus.DISPUTED
+    else:
+        claim.status = compute_claim_status(claim.line_items)
     db.commit()
     db.refresh(dispute)
     return dispute

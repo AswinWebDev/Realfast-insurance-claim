@@ -162,9 +162,14 @@ function LineItemRow({ li, claimId, isInsurer, onRefresh, memberId }) {
               <div style={{ marginTop: 10 }}>
                 <label>Reason for Dispute</label>
                 <textarea rows={2} value={disputeReason} onChange={e => setDisputeReason(e.target.value)}
-                  placeholder="Explain why you are disputing this decision…" style={{ marginBottom: 8, resize: 'vertical', fontSize: 12 }} />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn-danger btn-sm" disabled={loading || disputeReason.length < 10} onClick={handleDispute}>
+                  placeholder="Explain why you are disputing this decision…" style={{ marginBottom: 4, resize: 'vertical', fontSize: 12 }} />
+                {disputeReason.length > 0 && disputeReason.length < 5 && (
+                  <div style={{ fontSize: 11, color: 'var(--red)', marginBottom: 6 }}>
+                    Please enter at least 5 characters ({disputeReason.length}/5)
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button className="btn-danger btn-sm" disabled={loading || disputeReason.length < 5} onClick={handleDispute}>
                     {loading ? 'Filing…' : 'File Dispute'}
                   </button>
                   <button className="btn-ghost btn-sm" onClick={() => setShowDispute(false)}>Cancel</button>
@@ -216,6 +221,7 @@ export default function ClaimDetail({ claim, isInsurer, onRefresh, onBack }) {
   const totalBilled = claim.line_items?.reduce((s, l) => s + parseFloat(l.billed_amount || 0), 0) || 0
   const totalApproved = claim.line_items?.reduce((s, l) => s + parseFloat(l.approved_amount || 0), 0) || 0
   const totalMember = claim.line_items?.reduce((s, l) => s + parseFloat(l.member_responsibility || 0), 0) || 0
+  const totalAboveLimit = Math.max(0, totalBilled - totalApproved - totalMember)
 
   return (
     <div>
@@ -237,11 +243,12 @@ export default function ClaimDetail({ claim, isInsurer, onRefresh, onBack }) {
       </div>
 
       {/* Summary totals */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: totalAboveLimit > 0 ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'Total Billed', value: fmt(totalBilled), color: 'var(--text)' },
           { label: 'Insurance Pays', value: fmt(totalApproved), color: 'var(--green)' },
           { label: 'Member Pays', value: fmt(totalMember), color: 'var(--red)' },
+          ...(totalAboveLimit > 0 ? [{ label: 'Above Limit (Provider Write-off)', value: fmt(totalAboveLimit), color: 'var(--text-faint)' }] : []),
         ].map(({ label, value, color }) => (
           <div key={label} style={{ background: '#faf7f4', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', textAlign: 'center' }}>
             <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 3 }}>{label}</div>

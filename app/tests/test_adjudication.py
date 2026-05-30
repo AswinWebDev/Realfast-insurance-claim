@@ -214,6 +214,24 @@ class TestOopMax:
             f"OOP adjustment leaked into service accumulator"
         )
 
+    def test_above_limit_amount_does_not_inflate_insurance_payment(self, client):
+        # Bronze PRESCRIPTION: limit=$1200, copay=$40, deductible=$2500, 55% covered.
+        # Submit $20,000 claim on a fresh member.
+        # adjudicable=$19,960, deductible=$2,500 applied, remaining=$17,460
+        # insurance share = 55%*$17,460 = $9,603 — but capped at limit $1,200
+        # The $8,403 above-limit is NOT added to member_owes (not member's insurance responsibility)
+        # member_owes = $40 + $2,500 + 45%*$17,460 = $10,397 → OOP max hit → capped at $8,000
+        # insurance pays = $1,200 + $2,397 OOP absorption = $3,597
+        claim = submit(client, "member-003", [li("PRESCRIPTION", 20000)])
+        item = claim["line_items"][0]
+        assert item["status"] == "APPROVED"
+        assert Decimal(item["approved_amount"]) <= Decimal("3597.00"), (
+            f"Insurance paid ${item['approved_amount']} — inflated by above-limit amount"
+        )
+        assert Decimal(item["approved_amount"]) == Decimal("3597.00"), (
+            f"Expected $3597.00, got ${item['approved_amount']}"
+        )
+
     def test_oop_max_caps_member_responsibility(self, client):
         # Diamond OOP max=$3000. Use MENTAL_HEALTH (limit=$6000, 90% covered, copay=$20, deductible applies).
         # Deductible=$500 first. Claim $300: adjudicable=$280, deductible absorbs $280 → member=$300, insurance=$0.
@@ -340,6 +358,32 @@ class TestDisputes:
         updated_item = next(i for i in claim_resp.json()["line_items"] if i["id"] == item_id)
         assert updated_item["status"] == "APPROVED"
         assert claim_resp.json()["status"] == "APPROVED"
+
+    def test_claim_stays_disputed_while_second_open_dispute_exists(self, client):
+        # Claim with two denied line items, member files dispute on both.
+        # Insurer resolves one — claim must stay DISPUTED (not fall off the queue).
+        claim = submit(client, "member-003", [
+            li("PHYSICAL_THERAPY", 300),
+            li("PHYSICAL_THERAPY", 200),
+        ])
+        assert claim["status"] == "DENIED"
+        li1_id = claim["line_items"][0]["id"]
+        li2_id = claim["line_items"][1]["id"]
+
+        d1 = client.post(f"/api/claims/{claim['id']}/line-items/{li1_id}/disputes",
+            json={"reason": "Medically necessary per my doctor"}).json()
+        d2 = client.post(f"/api/claims/{claim['id']}/line-items/{li2_id}/disputes",
+            json={"reason": "Medically necessary per my doctor"}).json()
+
+        # Resolve first dispute — second still open
+        client.patch(f"/api/claims/{claim['id']}/line-items/{li1_id}/disputes/{d1['id']}",
+            json={"outcome": "UPHELD", "resolution_notes": "PT excluded on Bronze"})
+
+        # Claim must still be DISPUTED
+        updated = client.get(f"/api/claims/{claim['id']}").json()
+        assert updated["status"] == "DISPUTED", (
+            f"Claim should stay DISPUTED while second dispute is open, got {updated['status']}"
+        )
 
     def test_upheld_dispute_leaves_line_item_denied(self, client):
         claim = submit(client, "member-003", [li("PHYSICAL_THERAPY", 300)])

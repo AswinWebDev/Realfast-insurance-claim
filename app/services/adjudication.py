@@ -169,12 +169,15 @@ def adjudicate_line_item(
     # svc_benefit_charge is what counts against the service limit — always capped at remaining_benefit
     svc_benefit_charge = approved_amount
     if approved_amount < insurance_share:
+        # The insurer simply won't pay above the limit — this is NOT added to member_owes.
+        # Amounts above the annual benefit limit do not count toward OOP max. The provider
+        # writes off the excess (in-network) or bills the member outside the insurance system.
         partial_msg = (
             f"Annual benefit limit has ${remaining_benefit} remaining; "
-            f"approved for partial amount ${approved_amount}"
+            f"insurance pays ${approved_amount}, remaining ${_cents(insurance_share - approved_amount)} "
+            f"is above the annual limit and not covered"
         )
         notes.append(f"Step 7: PARTIAL — {partial_msg}")
-        member_owes += _cents(insurance_share - approved_amount)
     else:
         notes.append(f"Step 7: Full insurance share ${approved_amount} within annual limit")
 

@@ -126,7 +126,7 @@ class ClaimOut(BaseModel):
 # ---------- Dispute ----------
 
 class DisputeIn(BaseModel):
-    reason: str = Field(min_length=10)
+    reason: str = Field(min_length=5)
 
 
 class DisputeResolveIn(BaseModel):
