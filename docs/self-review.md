@@ -53,7 +53,16 @@ Example: Bronze Prescription, $20,000 claim, $1,200 limit, OOP $4,500/$8,000 use
 
 **Fixed:** removed the line adding above-limit amount to `member_owes`. A regression test was added covering the exact scenario.
 
-### Bug 5 — Claim Number Race Condition (found in engineering review)
+### Bug 5 — Above-Limit Amount Does Not Count Toward OOP — UI Gap (found by me during testing)
+After fixing Bug 4, a follow-up question during testing revealed a UI clarity issue: a $20,000 Gold LAB claim (annual limit $2,000) showed Insurance Pays $2,000 and Member Pays $2,909, with $15,091 unaccounted for in the summary. The numbers were mathematically correct but the UI gave no explanation of where the remaining amount went — it appeared as if money had disappeared.
+
+In US insurance, amounts above the annual benefit limit are not the member's responsibility. The hospital (provider) writes off the excess under the in-network contractual agreement — they agreed to accept the negotiated rate when they joined the insurer's network. This is called a **contractual adjustment**. The member is never billed for it. It does not count toward the member's OOP max.
+
+**Fixed:** added a fourth "Above Limit (Provider Write-off)" card to the claim summary totals that appears only when the billed amount exceeds insurance + member combined. This makes the accounting complete and explains the gap to the member.
+
+This distinction is specific to the US insurance system (PPO/HMO in-network model). In other countries (including India), insurance reimbursement works differently — there is no chargemaster fiction or contractual write-off. The UI fix applies only to the US model we implemented.
+
+### Bug 6 — Claim Number Race Condition (found in engineering review)
 `_claim_number()` used `SELECT COUNT(*) + 1` to generate sequential numbers. Two simultaneous submissions would produce the same claim number and the second would crash with a UNIQUE constraint violation.
 
 **Fixed:** replaced with `CLM-{year}-{uuid[:8].upper()}` — collision-free without needing a sequence table.
@@ -130,6 +139,7 @@ These are deliberately excluded. They are not gaps — they are the next version
 - **Retroactive policy versioning** — a policy edit today affects all past adjudication
 - **CPT → service_type auto-mapping** — members select service type directly; real systems derive it from the CPT code
 - **HDHP (High Deductible Health Plan) behavior** — the system models standard PPO/HMO adjudication: copay is deducted first, then the deductible applies to the remainder. HDHPs work differently by IRS rule — no copays until after the deductible is fully met, then copays kick in. Members pay 100% of costs until the deductible is hit. This is a known simplification. All three plans (Diamond, Gold, Bronze) are modeled as PPO-style, not HDHP.
+- **US-specific insurance model (chargemaster and provider write-off)** — the system models the US PPO in-network model where hospitals bill an artificially inflated "chargemaster" price and the in-network contracted rate is much lower. Amounts above the annual benefit limit are written off by the provider under their network contract — the member is never balance-billed for it. This behavior (provider write-off, contractual adjustment) is specific to the US system. In other countries, insurance reimbursement works differently — there is no chargemaster pricing, no contractual write-off, and the billed amount is typically the actual cost. The system does not model out-of-network balance billing, which is where US patients face significant unexpected costs when a provider has no contract with their insurer.
 
 ---
 
