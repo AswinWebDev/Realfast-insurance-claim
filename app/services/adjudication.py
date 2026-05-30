@@ -166,6 +166,8 @@ def adjudicate_line_item(
 
     # Step 7 — cap at remaining annual benefit limit
     approved_amount = _cents(min(insurance_share, remaining_benefit))
+    # svc_benefit_charge is what counts against the service limit — always capped at remaining_benefit
+    svc_benefit_charge = approved_amount
     if approved_amount < insurance_share:
         partial_msg = (
             f"Annual benefit limit has ${remaining_benefit} remaining; "
@@ -192,6 +194,7 @@ def adjudicate_line_item(
             f"Step 8: OOP max reached — insurance absorbs extra ${excess}, "
             f"member capped at ${member_owes}"
         )
+    # svc_benefit_charge is not adjusted by OOP — the service limit cap from Step 7 is final
 
     # Step 9 — commit accumulators and approve
     notes.append(
@@ -199,7 +202,7 @@ def adjudicate_line_item(
     )
 
     if commit_accumulators:
-        svc_acc.amount_used = _cents(svc_acc.amount_used + approved_amount)
+        svc_acc.amount_used = _cents(svc_acc.amount_used + svc_benefit_charge)
 
         if rule.deductible_applies and ded_applied > Decimal("0"):
             ded_acc = _get_or_create_accumulator(
