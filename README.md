@@ -2,6 +2,8 @@
 
 An insurance claims processing system built as a take-home assignment. Members submit claims with line items, the system adjudicates each item against coverage rules, and tracks the claim through its full lifecycle.
 
+> **Structure note:** Backend lives in `app/`, frontend in `frontend/` — both at the project root. Run both to use the full system (see Setup below).
+
 ---
 
 ## Tech Stack
